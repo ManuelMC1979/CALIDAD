@@ -234,6 +234,7 @@ a.ename:hover{color:var(--turq-dark)}
           <option>Reconocimiento / feedback positivo</option>
           <option>Plan de acción formal</option>
         </select></div>
+      <div class="frow"><label>ID llamada (Genesys)</label><input type="text" id="cGenesysId" placeholder="Pega aquí el ID de la llamada…"></div>
       <div class="frow"><label>Indicador / foco *</label>
         <select id="cFoco">
           <option>Calidad (monitoreo)</option><option>Contactabilidad</option><option>Adherencia</option>
@@ -661,11 +662,12 @@ async function saveCoach(pre){
   await dbInsert('coach_sesiones',{
     ejecutivo_id, linea:$('cLinea').value, fecha:$('cFecha').value,
     tipo:$('cTipo').value, foco:$('cFoco').value, origen:$('cOrigen').value,
+    genesys_id:$('cGenesysId').value.trim()||null,
     situacion:$('cSit').value.trim(), positivo:$('cPos').value.trim(), objetivo:$('cObj').value.trim(),
     compromisos, fecha_seguimiento:$('cSeg').value||null,
     acuerdo:$('cAcuerdo').value, estado:'Pendiente'
   });
-  ['cSit','cPos','cObj'].forEach(i=>$(i).value=''); $('cCompList').innerHTML=''; addCompRow();
+  ['cSit','cPos','cObj','cGenesysId'].forEach(i=>$(i).value=''); $('cCompList').innerHTML=''; addCompRow();
   await loadAll(); renderAll(); toast('Sesión guardada en el historial');
 }
 function fillHistTipos(){
@@ -697,7 +699,7 @@ function openSesion(id){
     </div>`).join('')||'<em>Sin compromisos</em>';
   $('mdDetailBody').innerHTML=`
     <h2>${esc(s.tipo)} · ${esc(ejecNom(s.ejecutivo_id))}</h2>
-    <p class="copc" style="margin-bottom:10px">${fmtF(s.fecha)} · ${esc(s.linea)} · Foco: <b>${esc(s.foco)}</b> · Origen: ${esc(s.origen||'—')} · Ejecutivo: ${esc(s.acuerdo||'Conforme')}</p>
+    <p class="copc" style="margin-bottom:10px">${fmtF(s.fecha)} · ${esc(s.linea)} · Foco: <b>${esc(s.foco)}</b> · Origen: ${esc(s.origen||'—')} · Ejecutivo: ${esc(s.acuerdo||'Conforme')}${s.genesys_id?' · ID llamada: <b>'+esc(s.genesys_id)+'</b>':''}</p>
     ${s.situacion?`<div class="detail-box"><h4>Situación observada</h4>${esc(s.situacion)}</div>`:''}
     ${s.positivo?`<div class="detail-box"><h4>Feedback positivo</h4>${esc(s.positivo)}</div>`:''}
     ${s.objetivo?`<div class="detail-box"><h4>Objetivo acordado</h4>${esc(s.objetivo)}</div>`:''}
@@ -886,6 +888,7 @@ async function saveMon(){
     await dbInsert('coach_sesiones',{
       ejecutivo_id, linea:$('mLinea').value, fecha:$('mFecha').value,
       tipo:'Coaching por monitoreo reprobado', foco:'Calidad (monitoreo)', origen:'Escucha de calidad',
+      genesys_id:$('mId').value.trim()||null,
       situacion:'Generado automáticamente: monitoreo '+($('mModo').value)+' del '+fmtF($('mFecha').value)+(r.defectuosa?' con error crítico ('+['ecuf','ecn','ecc'].filter(k=>!r.grupos[k].pasa).map(k=>k.toUpperCase()).join(', ')+').':' bajo meta de calidad.')+' '+($('mObs').value.trim()),
       positivo:$('mPos').value.trim(), objetivo:'', compromisos:[],
       fecha_seguimiento:null, acuerdo:'Conforme', estado:'Pendiente'
@@ -1364,7 +1367,8 @@ function printSesion(id){
       <td><b>Ejecutivo</b><br>${esc(ejecNom(s.ejecutivo_id))}</td><td><b>Fecha</b><br>${fmtF(s.fecha)}</td>
       <td><b>Línea</b><br>${esc(s.linea||'—')}</td><td><b>Tipo</b><br>${esc(s.tipo)}</td></tr><tr>
       <td><b>Foco</b><br>${esc(s.foco||'—')}</td><td><b>Origen</b><br>${esc(s.origen||'—')}</td>
-      <td><b>Estado</b><br>${esc(s.estado)}</td><td><b>Conformidad</b><br>${esc(s.acuerdo||'Conforme')}</td></tr></table>
+      <td><b>Estado</b><br>${esc(s.estado)}</td><td><b>Conformidad</b><br>${esc(s.acuerdo||'Conforme')}</td></tr>
+      <tr><td><b>ID llamada (Genesys)</b><br>${esc(s.genesys_id||'—')}</td><td colspan="3"></td></tr></table>
     ${pdfSec('Situación observada',s.situacion)}
     ${pdfSec('Feedback positivo',s.positivo)}
     ${pdfSec('Objetivo acordado',s.objetivo)}
@@ -1392,8 +1396,8 @@ function printPlan(id){
 function exportCSV(tipo){
   let rows=[],name='';
   if(tipo==='coach'){ name='historial_coach';
-    rows=[['Fecha','Ejecutivo','Línea','Tipo','Foco','Origen','Situación','Positivo','Objetivo','Compromisos','Seguimiento','Acuerdo','Estado']]
-    .concat(S.coach_sesiones.map(s=>[s.fecha,ejecNom(s.ejecutivo_id),s.linea,s.tipo,s.foco,s.origen,s.situacion,s.positivo,s.objetivo,(s.compromisos||[]).map(c=>c.texto+(c.cumplido?' [OK]':'')).join(' | '),s.fecha_seguimiento,s.acuerdo,s.estado]));
+    rows=[['Fecha','Ejecutivo','Línea','Tipo','ID llamada','Foco','Origen','Situación','Positivo','Objetivo','Compromisos','Seguimiento','Acuerdo','Estado']]
+    .concat(S.coach_sesiones.map(s=>[s.fecha,ejecNom(s.ejecutivo_id),s.linea,s.tipo,s.genesys_id||'',s.foco,s.origen,s.situacion,s.positivo,s.objetivo,(s.compromisos||[]).map(c=>c.texto+(c.cumplido?' [OK]':'')).join(' | '),s.fecha_seguimiento,s.acuerdo,s.estado]));
   } else if(tipo==='mon'){ name='escuchas_calidad';
     rows=[['Fecha','Ejecutivo','Línea','Tipo escucha','ID','Evaluador','Calibrada','ECUF','ECN','ECC','Defectuosa','Nota','Aprobada','Observaciones']]
     .concat(S.calidad_monitoreos.map(m=>[m.fecha,ejecNom(m.ejecutivo_id),m.linea,m.modo,m.id_llamada,m.evaluador,m.calibrada?'Sí':'No',m.ecuf_ok?'OK':'Error',m.ecn_ok?'OK':'Error',m.ecc_ok?'OK':'Error',m.defectuosa?'Sí':'No',m.nota,m.aprobada?'Sí':'No',m.observaciones]));
