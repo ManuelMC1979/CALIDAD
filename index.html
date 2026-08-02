@@ -182,6 +182,17 @@ a.ename:hover{color:var(--turq-dark)}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:11px 20px;border-radius:10px;font-size:.85rem;font-weight:600;box-shadow:var(--sh);z-index:200;display:none}
 .toast.show{display:block}
 
+/* ---------- pantalla de carga inicial ---------- */
+.loading-bg{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:400;flex-direction:column;gap:18px}
+.loading-bg.hidden{display:none}
+.spinner{width:52px;height:52px;border-radius:50%;border:4px solid var(--turq-soft);border-top-color:var(--turq);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-bg .ltxt{font-family:'Archivo';font-weight:700;color:var(--navy);font-size:1rem}
+.loading-bg .lsub{font-size:.8rem;color:var(--ink2)}
+.skel{background:linear-gradient(90deg,#EEF3F7 25%,#F6F9FB 37%,#EEF3F7 63%);background-size:400% 100%;animation:skel 1.3s ease infinite;border-radius:8px}
+@keyframes skel{0%{background-position:100% 50%}100%{background-position:0 50%}}
+
+
 /* ---------- acceso con clave ---------- */
 .lock-bg{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:500}
 .lock-bg.hidden{display:none}
@@ -548,6 +559,12 @@ a.ename:hover{color:var(--turq-dark)}
 </div>
 
 <div class="modal-bg" id="mdDetail"><div class="modal" id="mdDetailBody"></div></div>
+
+<div class="loading-bg" id="loadingScreen">
+  <div class="spinner"></div>
+  <div class="ltxt">Cargando información…</div>
+  <div class="lsub">Trayendo ejecutivos, coaching, escuchas y EPA desde la base</div>
+</div>
 <div class="toast" id="toast"></div>
 <script>
 
@@ -1555,7 +1572,9 @@ checkLock();
   $('kFecha').value=hoy();
   addCompRow(); buildScorecard(); buildCalCard('calRefCard');
   await loadAll(); renderAll();
+  $('loadingScreen').classList.add('hidden');
 })();
+setTimeout(()=>{ const l=$('loadingScreen'); if(l) l.classList.add('hidden'); }, 8000);
 document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m)m.classList.remove('open'); }));
 </script>
 </body>
